@@ -379,13 +379,19 @@ class MediaPlayerDevice(Entity):
 
         return None
 
+    @property
+    def media_image_verify_ssl(self):
+        """Should we verify SSL when proxying requests for media images?"""
+        return True
+
     async def async_get_media_image(self):
         """Fetch media image of current playing image."""
         url = self.media_image_url
+        verify_ssl = self.media_image_verify_ssl
         if url is None:
             return None, None
 
-        return await _async_fetch_image(self.hass, url)
+        return await _async_fetch_image(self.hass, url, verify_ssl)
 
     @property
     def media_title(self):
@@ -790,7 +796,7 @@ class MediaPlayerDevice(Entity):
         return state_attr
 
 
-async def _async_fetch_image(hass, url):
+async def _async_fetch_image(hass, url, verify_ssl=True):
     """Fetch image.
 
     Images are cached in memory (the images are typically 10-100kB in size).
@@ -809,7 +815,7 @@ async def _async_fetch_image(hass, url):
             return cache_images[url][CACHE_CONTENT]
 
         content, content_type = (None, None)
-        websession = async_get_clientsession(hass)
+        websession = async_get_clientsession(hass, verify_ssl)
         try:
             with async_timeout.timeout(10, loop=hass.loop):
                 response = await websession.get(url)
